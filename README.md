@@ -10,7 +10,7 @@
 * docker
 ### How do I get set up? ###
 
-* Clone the repo and launch docker-compose up -d. It will start a web service listening on 5000 port
+* Clone the repo and launch docker-compose up -d --build. It will start a web service listening on 5000 port
 * Add the file config.py in the root directory and add access password(access_pwd="PASSWORD") for basic authentication. User is service_keystore
 * Set the crypto key calling set_keyfile endpoint (see below)
 * If you don't specify field host in json payload, server will get hostname from where the request comes from
