@@ -24,9 +24,7 @@ class LazyDecoder(json.JSONDecoder):
             s = regex.sub(replacement, s)
         return super().decode(s, **kwargs)
 
-users = {
-    "service_keystore": generate_password_hash(access_pwd)
-}
+
 
 @auth.verify_password
 def verify_password(username, password):
