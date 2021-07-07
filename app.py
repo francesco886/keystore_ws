@@ -48,7 +48,7 @@ def set_keyfile():
     except OSError:
         return_value = {
             "success": "ko",
-            "message": "Creation of the directory credentials/host] failed"
+            "message": "Creation of the directory credentials/host failed"
         }
     try:
         return_value = write_key(host)
