@@ -2,6 +2,7 @@ from cryptography.fernet import Fernet
 from pathlib import Path
 from json.decoder import JSONDecodeError
 import json, os
+import sqlite3
 
 
 def write_key(file_name):
@@ -32,7 +33,7 @@ def write_key(file_name):
     return return_value
 
 
-def write_password(username, password, host):
+def write_password(username, password, service, host):
     """
     Add a credential record to credential store file
     """
@@ -56,7 +57,7 @@ def write_password(username, password, host):
         with open(credential_file, 'w'):
             try:
                 f_credentials = open(credential_file, "w")
-                f_credentials.write(username + ":" + password + "\n")
+                f_credentials.write(username + "|||" + service + "|||" + password + "\n")
             except OSError:
                 return_value = {
                     "success": "ko",
@@ -66,7 +67,7 @@ def write_password(username, password, host):
 
             return_value = {
                 "success": "ok",
-                "message": "Added record for " + username + " in " + host + " file!"
+                "message": "Added record for " + username + "|||" + service + " in " + host + " file!"
             }
         
         return return_value
@@ -77,7 +78,7 @@ def write_password(username, password, host):
     # Check if is already present this record
     with open(credential_file, 'r+') as cf:
         for line in cf:
-            if line.startswith(username):
+            if line.startswith(username+"|||"+service):
                 return_value = {
                     "success": "ko",
                     "message": "Record for " + username + " already exists in " + host + ".txt"
@@ -86,7 +87,7 @@ def write_password(username, password, host):
 
     try:
         f_credentials = open(credential_file, "a+")
-        f_credentials.write(username + ":" + password + "\n")
+        f_credentials.write(username + "|||" + service + "|||" + password + "\n")
     except OSError:
         return_value = {
             "success": "ko",
@@ -96,12 +97,12 @@ def write_password(username, password, host):
 
     return_value = {
         "success": "ok",
-        "message": "Added record for " + username + " in " + host + " file!"
+        "message": "Added record for " + username + "|||" + service + " in " + host + " file!"
     }
 
     return return_value
 
-def read_password(username,host):
+def read_password(username,service,host):
     """
     Read a credential record from credential store file
     """
@@ -121,8 +122,8 @@ def read_password(username,host):
 
     with open(credential_file, 'r+') as cf:
         for line in cf:
-            if line.startswith(username):
-                record_password_field = line.split(":")[-1].strip()
+            if line.startswith(username+"|||"+service):
+                record_password_field = line.split("|||")[-1].strip()
                 return_value = {
                     "success" : "ok",
                     "message": record_password_field
@@ -131,13 +132,13 @@ def read_password(username,host):
                 return return_value
     return_value = {
         "success" : "ko",
-        "message": "Record for " + username + " not found in " + host + ".txt file!"
+        "message": "Record for " + username + "|||" + service + " not found in " + host + ".txt file!"
     }
 
     return return_value
 
 
-def change_password(username, password, host):
+def change_password(username, password, service, host):
     """
     Change a credential record inside credential store file
     """
@@ -160,13 +161,13 @@ def change_password(username, password, host):
         lines = cf.readlines()
         record_exists = False
         for line in lines:
-            if line.startswith(username):
+            if line.startswith(username+"|||"+service):
                 record_exists = True
 
         if not record_exists:
             return_value = {
                 "success": "ko",
-                "message": "No record present for user " + username + " in " + host + ".txt file!"
+                "message": "No record present for user " + username + "|||" + service + " in " + host + ".txt file!"
             }
 
             return return_value
@@ -175,13 +176,13 @@ def change_password(username, password, host):
         lines = cf.readlines()
         output = []
         for line in lines:
-            if not line.startswith(username):
+            if not line.startswith(username+"|||"+service):
                 output.append(line)
 
     try:
         f_credentials = open(credential_file, "w")
         f_credentials.writelines(output)
-        f_credentials.write(username + ":" + password + "\n")
+        f_credentials.write(username + "|||" + service + "|||" + password + "\n")
         f_credentials.close()
     except OSError:
         return_value = {
@@ -193,12 +194,12 @@ def change_password(username, password, host):
     
     return_value = {
         "success" : "ok",
-        "message": "Password for " + username + " in " + host + ".txt updated correctly!"
+        "message": "Password for " + username + "|||" + service + " in " + host + ".txt updated correctly!"
     }
 
     return return_value
 
-def del_password(username, host):
+def del_password(username, service, host):
     """
     Delete a credential record from credential store file
     """
@@ -221,13 +222,13 @@ def del_password(username, host):
         lines = cf.readlines()
         record_exists = False
         for line in lines:
-            if line.startswith(username):
+            if line.startswith(username+"|||"+service):
                 record_exists = True
 
         if not record_exists:
             return_value = {
                 "success": "ko",
-                "message": "No record present for user " + username + " in " + host + ".txt file!"
+                "message": "No record present for user " + username + "|||" + service + " in " + host + ".txt file!"
             }
 
             return return_value
@@ -235,7 +236,7 @@ def del_password(username, host):
     with open(credential_file, 'r+') as cf:
         output = []
         for line in cf:
-            if not line.startswith(username):
+            if not line.startswith(username+"|||"+service):
                 output.append(line)
     
     with open(credential_file, 'w') as cf:
@@ -243,7 +244,40 @@ def del_password(username, host):
     
     return_value = {
         "success" : "ok",
-        "message": "Removed record for user " + username + "!" 
+        "message": "Removed record for user " + username + "|||" + service + "!" 
+    }
+
+    return return_value
+
+def list_users(host):
+    """
+    list all users stored file
+    """
+    secret_file = "credentials/" + host + "/" + host + ".key"
+    secret_file_path = Path(secret_file)
+    credential_file = "credentials/" + host + "/" + host + ".txt"
+    credential_file_path = Path(credential_file)
+
+    if not credential_file_path.exists():
+        return_value = {
+            "success": "ko",
+            "message": "No file present for host " + host + "!"
+        }
+        return return_value
+    
+    decrypt(host)
+
+    with open(credential_file, 'r') as cf:
+        lines = cf.readlines()
+        output = []
+
+        for line in lines:
+            username = line.split("|||")[0]
+            service = line.split("|||")[1]
+            output.append(username + "|||" + service)
+    return_value = {
+        "success": "ok",
+        "message": output
     }
 
     return return_value
@@ -317,3 +351,5 @@ def load_key(host):
 
     return open(secret_file, "rb").read()
 
+def db_connect(dbname):
+    con = sqlite3.connect(dbname)

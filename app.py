@@ -10,6 +10,8 @@ from urllib.parse import urlparse
 
 app = Flask(__name__)
 auth = HTTPBasicAuth()
+
+
 users = {
     "service_keystore": generate_password_hash(access_pwd)
 }
@@ -18,12 +20,11 @@ class LazyDecoder(json.JSONDecoder):
     def decode(self, s, **kwargs):
         regex_replacements = [
             (re.compile(r'([^\\])\\([^\\])'), r'\1\\\\\2'),
-            (re.compile(r',(\s*])'), r'\1'),
+            (re.compile(r',(\s*])'), r'\1')
         ]
         for regex, replacement in regex_replacements:
             s = regex.sub(replacement, s)
         return super().decode(s, **kwargs)
-
 
 
 @auth.verify_password
@@ -35,12 +36,15 @@ def verify_password(username, password):
 @app.route('/set_keyfile', methods=['POST'])
 @auth.login_required
 def set_keyfile():
-    data = request.get_json(force=True)
 
-    if "host" not in data:
-        o = urlparse(request.base_url)
-        host = o.hostname
-    else:
+    o = urlparse(request.base_url)
+    host = o.hostname
+    return_value="No json payload sent!"
+
+    if request.data:
+        data = request.get_json(force=True)
+
+    if "host" in data:
         host = data["host"]
 
     try:
@@ -65,104 +69,127 @@ def set_keyfile():
 @auth.login_required
 def set_password():
 
-    data = json.loads(request.data, cls=LazyDecoder)
-    
-    if "username" not in data or "password" not in data or data["username"] == "" or data["password"] == "":
-        return_value={
-            "message": "Parameters needed: username,password,host(not mandatory)"
-        }
-        return jsonify(return_value), 400
+    o = urlparse(request.base_url)
+    host = o.hostname
+    return_value="No json payload sent!"
 
-    if len(re.findall(r"\\+", data["password"])):
-        return_value={
-            "message": "Invalid character backslash"
-        }
-        return jsonify(return_value), 400
+    if request.data:
+        data = json.loads(request.data, cls=LazyDecoder)
+        
+        if "username" not in data or "password" not in data or "service" not in data or data["username"] == "" or data["password"] == "" or data["service"] == "":
+            return_value={
+                "message": "Parameters needed: username,password,service,host(not mandatory)"
+            }
+            return jsonify(return_value), 400
 
-    if "host" not in data:
-        o = urlparse(request.base_url)
-        host = o.hostname
-    else:
-        host = data["host"]
-    
-    
-    return_value = write_password(data["username"],data["password"],host)
+        if len(re.findall(r"\\+", data["password"])) or len(re.findall(r"\\+", data["username"])) or len(re.findall(r"\\+", data["service"])):
+            return_value={
+                "message": "Invalid character backslash"
+            }
+            return jsonify(return_value), 400
 
-    encrypt(host)
+        if "host" in data:
+            host = data["host"]
+    
+        return_value = write_password(data["username"],data["password"],data["service"],host)
+
+        encrypt(host)
 
     return jsonify(return_value)
 
 @app.route('/get_password', methods=['POST'])
 @auth.login_required
 def get_password():
+    o = urlparse(request.base_url)
+    host = o.hostname
+    return_value="No json payload sent!"
 
-    data = request.get_json(force=True)
+    if request.data:
+        data = request.get_json(force=True)
 
-    if "username" not in data or data["username"] == "":
-        return_value={
-            "message": "Parameters needed: username,host(not mandatory)"
-        }
-        return jsonify(return_value), 400
+        if "username" not in data or "service" not in data or data["username"] == "" or data["service"] == "":
+            return_value={
+                "message": "Parameters needed: username,service,host(not mandatory)"
+            }
+            return jsonify(return_value), 400
 
-    if "host" not in data:
-        o = urlparse(request.base_url)
-        host = o.hostname
-    else:
-        host = data["host"]
+        if "host" in data:
+            host = data["host"]
 
-    return_value = read_password(data["username"],host)
+        return_value = read_password(data["username"],data["service"],host)
     
-    encrypt(host)
+        encrypt(host)
     
     return return_value
 
 @app.route('/update_password', methods=['POST'])
 @auth.login_required
 def update_password():
+    o = urlparse(request.base_url)
+    host = o.hostname
+    return_value="No json payload sent!"
 
-    data = request.get_json(force=True)
+    if request.data:
+        data = request.get_json(force=True)
 
-    if "username" not in data or "password" not in data or data["username"] == "" or data["password"] == "":
-        return_value={
-            "message": "Parameters needed: username,password,host(not mandatory)"
-        }
-        return jsonify(return_value), 400
+        if "username" not in data or "password" not in data or "service" not in data or data["username"] == "" or data["password"] == "" or data["service"] == "":
+            return_value={
+                "message": "Parameters needed: username,password,service,host(not mandatory)"
+            }
+            return jsonify(return_value), 400
 
-    if "host" not in data:
-        o = urlparse(request.base_url)
-        host = o.hostname
-    else:
-        host = data["host"]
+        if "host"in data:
+            host = data["host"]
     
-    return_value = change_password(data["username"],data["password"],host)
+        return_value = change_password(data["username"],data["password"],data["service"],host)
 
-    encrypt(host)
+        encrypt(host)
 
     return jsonify(return_value)
 
 @app.route('/delete_password', methods=['POST'])
 @auth.login_required
-def delete_password():  
+def delete_password():
+    o = urlparse(request.base_url)
+    host = o.hostname
+    return_value="No json payload sent!"
     
-    data = request.get_json(force=True)
+    if request.data:
+        data = request.get_json(force=True)
 
-    if "username" not in data or data["username"] == "":
-        return_value={
-            "message": "Parameters needed: username,host(not mandatory)"
-        }
-        return jsonify(return_value), 400
+        if "username" not in data or "service" not in data or data["username"] == "" or data["service"] == "":
+            return_value={
+                "message": "Parameters needed: username,service,host(not mandatory)"
+            }
+            return jsonify(return_value), 400
 
-    if "host" not in data:
-        o = urlparse(request.base_url)
-        host = o.hostname
-    else:
-        host = data["host"]
+        if "host" in data:
+            host = data["host"]
 
-    return_value = del_password(data["username"],host)
+        return_value = del_password(data["username"],data["service"],host)
+
+        encrypt(host)
+
+    return jsonify(return_value)
+
+@app.route('/get_users', methods=['POST'])
+@auth.login_required
+def get_users():
+    o = urlparse(request.base_url)
+    host = o.hostname
+    return_value="No json payload sent!"
+
+    if request.data:
+        data = request.get_json(force=True)
+
+        if "host" in data:
+            host = data["host"]
+
+    return_value = list_users(host)
 
     encrypt(host)
 
-    return jsonify(return_value)
+    return return_value
     
 
 if __name__ == "__main__":

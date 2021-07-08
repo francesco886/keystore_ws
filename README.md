@@ -51,7 +51,7 @@ Every endpoints return a json payload with two fields:
 set_keyfile:
 ```
 curl --location --request POST 'localhost:5000/set_keyfile' \                        
---header 'Authorization: Basic ******' \
+--header 'Authorization: Basic c2VydmljZV9rZXlzdG9yZTo0azhwUS11STZtYkMwdFZLN2Y=' \
 --header 'Content-Type: application/json' \
 --data-raw '{
     "host":"localhost"
@@ -61,7 +61,7 @@ curl --location --request POST 'localhost:5000/set_keyfile' \
 set_password:
 ```
 curl --location --request POST 'localhost:5000/set_password' \
---header 'Authorization: Basic ******' \
+--header 'Authorization: Basic c2VydmljZV9rZXlzdG9yZTo0azhwUS11STZtYkMwdFZLN2Y=' \
 --header 'Content-Type: application/json' \
 --data-raw '{
     "username": "pippo",
@@ -72,7 +72,7 @@ curl --location --request POST 'localhost:5000/set_password' \
 get_password:
 ```
 curl --location --request POST 'localhost:5000/get_password' \
---header 'Authorization: Basic *****' \
+--header 'Authorization: Basic c2VydmljZV9rZXlzdG9yZTo0azhwUS11STZtYkMwdFZLN2Y=' \
 --header 'Content-Type: application/json' \
 --data-raw '{
     "username": "pippo"
@@ -82,7 +82,7 @@ curl --location --request POST 'localhost:5000/get_password' \
 update_password:
 ```
 curl --location --request POST 'localhost:5000/update_password' \
---header 'Authorization: Basic *****' \
+--header 'Authorization: Basic c2VydmljZV9rZXlzdG9yZTo0azhwUS11STZtYkMwdFZLN2Y=' \
 --header 'Content-Type: application/json' \
 --data-raw '{
     "username":"pippo",
@@ -93,7 +93,7 @@ curl --location --request POST 'localhost:5000/update_password' \
 delete_password:
 ```
 curl --location --request POST 'localhost:5000/delete_password' \
---header 'Authorization: Basic *****' \
+--header 'Authorization: Basic c2VydmljZV9rZXlzdG9yZTo0azhwUS11STZtYkMwdFZLN2Y=' \
 --header 'Content-Type: application/json' \
 --data-raw '{
     "username":"pippo"
