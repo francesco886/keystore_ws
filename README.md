@@ -2,7 +2,7 @@
 
 ### What is this repository for? ###
 
-* Web service that allows to store password on file system encrypted
+* REST API BE that allows to store password on file system encrypted
 * 1.0
 
 ### Dependencies
